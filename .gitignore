@@ -1,0 +1,80 @@
+# IDE-SPECIFIC FILES
+# JetBrains IDEs (IntelliJ, WebStorm, etc.)
+.idea/
+.idea_modules/
+.idea/$CACHE_FILE$
+.idea/**/aws.xml
+.idea/**/azureSettings.xml
+.idea/**/codestream.xml
+.idea/**/contentModel.xml
+.idea/**/dbnavigator.xml
+.idea/**/dictionaries
+.idea/**/dynamic.xml
+.idea/**/gradle.xml
+.idea/**/httpRequests
+.idea/**/libraries
+.idea/**/markdown-navigator/
+.idea/**/mongoSettings.xml
+.idea/**/shelf
+.idea/**/sonarIssues.xml
+.idea/**/sonarlint/
+.idea/**/sqlDataSources.xml
+.idea/**/tasks.xml
+.idea/**/uiDesigner.xml
+.idea/**/usage.statistics.xml
+.idea/**/workspace.xml
+.idea/caches/build_file_checksums.ser
+.idea/misc.xml
+.idea/replstate.xml
+modules.xml
+
+# IntelliJ project files
+*.iml
+*.ipr
+
+# EXTERNAL PLUGINS / THIRD-PARTY FILES
+# Atlassian, Crashlytics, Fabric, etc.
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics-build.properties
+crashlytics.properties
+fabric.properties
+
+# OS-SPECIFIC FILES
+# macOS system files
+.DS_Store
+.apdisk
+._*
+.AppleDB
+.AppleDesktop
+.AppleDouble
+.com.apple.timemachine.donotpresent
+.DocumentRevisions-V100
+.fseventsd
+.LSOverride
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+Icon
+Network Trash Folder
+Temporary Items
+
+# PROJECT CONFIG / SECRETS
+# SSL and security-related
+.well-known/
+
+# Local environment configuration
+.env
+
+# LOGS / TEMP FILES
+# Log and temp files
+*.log
+*.tmp
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# DOCKER / KUBERNETES
+.kube/

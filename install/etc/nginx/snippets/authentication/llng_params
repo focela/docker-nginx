@@ -1,7 +1,0 @@
-# LemonLDAP:NG Parameters for FastCGI Communication
-# This file is intentionally left blank to serve as a placeholder for passing
-# environment variables to FastCGI destinations.
-
-# Add custom FastCGI parameters here as needed to support LemonLDAP:NG
-# Example:
-# fastcgi_param CUSTOM_PARAM value;
