@@ -1,0 +1,127 @@
+#----------------------------------------------------------------------
+# Nginx Reverse Proxy Server Template
+#
+# Purpose: Provides a complete reverse proxy server configuration that
+# forwards all incoming requests to a backend service. Includes proper
+# header forwarding, WebSocket support, and SSL proxy configuration
+# for comprehensive proxy functionality.
+#
+# Usage: Activated when NGINX_MODE is set to "proxy". Template variables
+# are substituted during container initialization to configure the proxy
+# server with appropriate backend URL and listening port.
+#
+# Template Variables:
+# - NGINX_LISTEN_PORT: Port for proxy server (default: 80)
+# - NGINX_PROXY_URL: Backend service URL to proxy requests to
+#
+# Use Cases:
+# - API gateway functionality
+# - Load balancing to backend services
+# - SSL termination with backend forwarding
+# - WebSocket proxy for real-time applications
+# - Service mesh integration
+#----------------------------------------------------------------------
+
+server {
+  #----------------------------------------------------------------------
+  # SERVER CONFIGURATION
+  #----------------------------------------------------------------------
+  ### Don't Touch This
+  # Listen on configured port for proxy requests
+  # Template variable: NGINX_LISTEN_PORT (typically 80 or 443)
+  listen {{NGINX_LISTEN_PORT}};
+  
+  # Server name for proxy server
+  # Set to localhost for general proxy functionality
+  server_name localhost;
+  ###
+
+  #----------------------------------------------------------------------
+  # REVERSE PROXY LOCATION
+  #----------------------------------------------------------------------
+  # Root location that proxies all requests to backend service
+  location / {
+    #----------------------------------------------------------------------
+    # BACKEND PROXY CONFIGURATION
+    #----------------------------------------------------------------------
+    # Forward all requests to configured backend service
+    # Template variable: NGINX_PROXY_URL (e.g., http://backend:8080)
+    proxy_pass {{NGINX_PROXY_URL}};
+    
+    # Disable automatic redirect rewriting
+    # Prevents nginx from modifying Location headers in backend responses
+    proxy_redirect off;
+    
+    #----------------------------------------------------------------------
+    # CLIENT IP FORWARDING HEADERS
+    #----------------------------------------------------------------------
+    # Forward real client IP information to backend service
+    # Essential for backend logging, security policies, and rate limiting
+    
+    # Set real client IP address
+    proxy_set_header X-Real-IP $remote_addr;
+    
+    # Build forwarded-for chain with client and proxy IPs
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    
+    # Forward original host header from client request
+    proxy_set_header X-Forwarded-Host $server_name;
+    
+    #----------------------------------------------------------------------
+    # SSL PROXY CONFIGURATION
+    #----------------------------------------------------------------------
+    # Enable SSL server name indication for HTTPS backend connections
+    # Required when proxying to HTTPS backends with SNI
+    proxy_ssl_server_name on;
+
+    #----------------------------------------------------------------------
+    # ADDITIONAL PROXY HEADERS
+    #----------------------------------------------------------------------
+    # Additional header forwarding for comprehensive backend integration
+    
+    # Forward original host header (standard proxy practice)
+    proxy_set_header Host $host;
+    
+    # Set real client IP address (duplicate - may override upstream values)
+    # Note: This duplicates earlier X-Real-IP header setting
+    # Preserved for existing functionality - may be intentional override
+    proxy_set_header X-Real-IP $remote_addr;
+    
+    # Build forwarded-for chain (duplicate - may override upstream values)  
+    # Note: This duplicates earlier X-Forwarded-For header setting
+    # Preserved for existing functionality - may be intentional override
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    
+    # Forward original request protocol (HTTP/HTTPS)
+    # Enables backend to determine if original request was secure
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    #----------------------------------------------------------------------
+    # PROXY TIMEOUT CONFIGURATION
+    #----------------------------------------------------------------------
+    # Configure timeout for backend response reading
+    # 90 seconds allows for slower backend processing
+    # Prevents premature connection termination for long-running requests
+    proxy_read_timeout 90;
+
+    #----------------------------------------------------------------------
+    # WEBSOCKET SUPPORT CONFIGURATION
+    #----------------------------------------------------------------------
+    # Enable WebSocket proxy support for real-time applications
+    # Required for applications using WebSocket connections
+    
+    # Use HTTP/1.1 for WebSocket compatibility
+    # WebSocket requires HTTP/1.1 protocol for upgrade mechanism
+    proxy_http_version 1.1;
+    
+    # Forward WebSocket upgrade header
+    # Enables WebSocket protocol negotiation with backend
+    proxy_set_header Upgrade $http_upgrade;
+    
+    # Set connection upgrade for WebSocket support
+    # Required for WebSocket connection establishment
+    proxy_set_header Connection "upgrade";
+  }
+  
+  ### Don't edit past here
+}
