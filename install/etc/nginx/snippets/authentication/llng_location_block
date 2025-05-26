@@ -1,0 +1,73 @@
+#----------------------------------------------------------------------
+# LemonLDAP::NG Authentication Location Block
+#
+# Purpose: Defines the internal authentication endpoint (/lmauth) that
+# handles authentication subrequests for LemonLDAP::NG integration.
+# This location block processes auth_request calls and communicates
+# with LLNG handlers via FastCGI protocol.
+#
+# Usage: Included in nginx server blocks that require LLNG authentication.
+# Works in conjunction with auth_request directives in protected locations.
+#----------------------------------------------------------------------
+
+location = /lmauth {
+  # Mark as internal-only endpoint (not accessible from external requests)
+  # Only nginx subrequests can access this location
+  internal;
+  
+  #----------------------------------------------------------------------
+  # FASTCGI CONFIGURATION
+  #----------------------------------------------------------------------
+  # Include standard FastCGI parameters for LLNG communication
+  include /etc/nginx/fastcgi_params;
+  
+  # Forward requests to LLNG upstream pool (defined in main config)
+  # Pool contains one or more LLNG authentication handlers
+  fastcgi_pass llng-upstream-pool;
+  
+  # Set remote port for LLNG handler communication
+  # Template variable substituted during container initialization
+  fastcgi_param REMOTE_PORT {{NGINX_AUTHENTICATION_LLNG_HANDLER_PORT}};
+  
+  # Disable request body forwarding for authentication requests
+  # Authentication only needs headers and metadata, not request body
+  fastcgi_pass_request_body  off;
+  fastcgi_param CONTENT_LENGTH "";
+  
+  #----------------------------------------------------------------------
+  # REQUEST CONTEXT PARAMETERS
+  #----------------------------------------------------------------------
+  # Forward original request context to LLNG handler for authentication decisions
+  
+  # Original host header from client request
+  fastcgi_param HOST $http_host;
+  
+  # Original request URI (set by auth_request configuration)
+  # Used by LLNG to redirect back to original page after authentication
+  fastcgi_param X_ORIGINAL_URI  $original_uri;
+  
+  # Unique request identifier for tracking and logging
+  fastcgi_param UNIQUE_ID $request_id;
+  
+  #----------------------------------------------------------------------
+  # PERFORMANCE OPTIMIZATION
+  #----------------------------------------------------------------------
+  # Configure FastCGI buffering for LLNG response handling
+  # Template variables substituted during container initialization
+  
+  # Buffer size for FastCGI response headers
+  fastcgi_buffer_size {{NGINX_AUTHENTICATION_LLNG_FASTCGI_BUFFER_SIZE}};
+  
+  # Number and size of buffers for FastCGI response body
+  fastcgi_buffers {{NGINX_AUTHENTICATION_LLNG_FASTCGI_BUFFERS}};
+  
+  #----------------------------------------------------------------------
+  # HTTP CONNECTION OPTIMIZATION
+  #----------------------------------------------------------------------
+  # Use HTTP/1.1 for upstream communication with connection reuse
+  proxy_http_version 1.1;
+  
+  # Clear connection header to enable keep-alive connections
+  # Improves performance by reusing connections to LLNG handlers
+  proxy_set_header Connection "";
+}
