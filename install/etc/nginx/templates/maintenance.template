@@ -1,0 +1,60 @@
+#----------------------------------------------------------------------
+# Nginx Maintenance Mode Server Template
+#
+# Purpose: Provides a simple server configuration for maintenance mode
+# operations. When nginx is switched to maintenance mode, this template
+# is activated to serve maintenance pages to users while the main
+# application is unavailable for updates, deployments, or repairs.
+#
+# Usage: Activated when NGINX_MODE is set to "maintenance". Template
+# variables are substituted during container initialization to configure
+# the maintenance server with appropriate port, document root, and
+# default maintenance page.
+#
+# Template Variables:
+# - NGINX_LISTEN_PORT: Port for maintenance server (default: 80)
+# - NGINX_MAINTENANCE_PATH: Document root for maintenance files
+# - NGINX_MAINTENANCE_FILE: Default maintenance page filename
+#
+# Deployment Scenarios:
+# - Application deployments and updates
+# - Database maintenance windows
+# - Infrastructure upgrades
+# - Emergency maintenance situations
+#----------------------------------------------------------------------
+
+#----------------------------------------------------------------------
+# MAINTENANCE MODE SERVER CONFIGURATION
+#----------------------------------------------------------------------
+# Simple server block that serves static maintenance pages during
+# application downtime periods
+
+server {
+  # Listen on configured port for maintenance requests
+  # Template variable: NGINX_LISTEN_PORT (typically 80 or 443)
+  # Uses same port as main application to maintain transparent user experience
+  listen {{NGINX_LISTEN_PORT}};
+  
+  # Server name configuration for maintenance mode
+  # Set to localhost for simple maintenance page serving
+  # Can be modified to match specific domain requirements if needed
+  server_name localhost;
+
+  #----------------------------------------------------------------------
+  # MAINTENANCE PAGE LOCATION
+  #----------------------------------------------------------------------
+  # Root location serves maintenance content to all requests
+  location / {
+    # Document root for maintenance files
+    # Template variable: NGINX_MAINTENANCE_PATH (default: /assets/nginx/maintenance/)
+    # Directory should contain maintenance page(s) and any supporting assets
+    # Common structure: index.html, CSS files, images, etc.
+    root {{NGINX_MAINTENANCE_PATH}};
+    
+    # Default maintenance page file
+    # Template variable: NGINX_MAINTENANCE_FILE (default: index.html)
+    # Primary maintenance page served when users access the site
+    # Should provide clear information about maintenance status and expected duration
+    index {{NGINX_MAINTENANCE_FILE}};
+  }
+}
