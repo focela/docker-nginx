@@ -1,0 +1,265 @@
+# Manual Multi-Architecture Nginx Image Build Workflow
+# Purpose: Manually triggered build of custom Nginx Docker images (Alpine & Debian-based) for multiple architectures
+# Trigger: workflow_dispatch
+# Platforms:
+#   - Alpine 3.9+: amd64 only
+#   - Alpine 3.10+ & Debian: amd64, arm64, arm/v7
+# Registries: Docker Hub & GHCR
+# Strategy: Matrix build using Buildx & QEMU for cross-platform support
+# Caching: GitHub Actions cache for Docker layers to speed up rebuilds
+
+
+name: Manual Multi-Architecture Image Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOCKER_BUILDKIT: 1
+  BUILDKIT_PROGRESS: plain
+
+jobs:
+  build-matrix:
+    name: Build ${{ matrix.distro }}-${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Alpine variants
+          - distro: alpine
+            variant: edge
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.21"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.20"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.19"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.18"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.17"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.16"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.15"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.14"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.13"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.12"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.11"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.10"
+            dockerfile: Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: alpine
+            variant: "3.9"
+            dockerfile: Dockerfile
+            platforms: linux/amd64
+          - distro: alpine
+            variant: "3.8"
+            dockerfile: Dockerfile
+            platforms: linux/amd64
+          - distro: alpine
+            variant: "3.7"
+            dockerfile: Dockerfile
+            platforms: linux/amd64
+          - distro: alpine
+            variant: "3.6"
+            dockerfile: Dockerfile
+            platforms: linux/amd64
+          - distro: alpine
+            variant: "3.5"
+            dockerfile: Dockerfile
+            platforms: linux/amd64
+          # Debian variants
+          - distro: debian
+            variant: bookworm
+            dockerfile: Dockerfile.debian
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: debian
+            variant: bullseye
+            dockerfile: Dockerfile.debian
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+          - distro: debian
+            variant: buster
+            dockerfile: Dockerfile.debian
+            platforms: linux/amd64,linux/arm64,linux/arm/v7
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        run: |
+          echo "DISTRO=${{ matrix.distro }}" >> $GITHUB_ENV
+          echo "DISTRO_VARIANT=${{ matrix.variant }}" >> $GITHUB_ENV
+          echo "build_file=${{ matrix.dockerfile }}" >> $GITHUB_ENV
+
+      - name: Prepare tags and labels
+        id: prep
+        run: |
+          # Extract repository name without 'docker-' prefix
+          REPO_NAME="${GITHUB_REPOSITORY/docker-/}"
+          echo "dockerhub_repo=${REPO_NAME}" >> $GITHUB_ENV
+
+          # Determine branch/tag based tags
+          if [[ "${GITHUB_REF}" == refs/heads/* ]]; then
+              if [[ "${GITHUB_REF}" == refs/heads/*/* ]]; then
+                  git_branch="${REPO_NAME}:$(echo $GITHUB_REF | sed "s|refs/heads/||g" | sed "s|/|-|g")"
+              else
+                  git_branch=${GITHUB_REF#refs/heads/}
+              fi
+
+              case "${git_branch}" in
+                  "main" | "master" )
+                      # Check if this is the latest variant
+                      if [ "${{ vars.LATEST }}" = "${DISTRO}-${DISTRO_VARIANT}" ] || \
+                         [ "${{ secrets.LATEST }}" = "${DISTRO}-${DISTRO_VARIANT}" ]; then
+                          image_latest=",${GITHUB_REPOSITORY}:latest"
+                      fi
+          
+                      # Check if this is the latest for the distro
+                      if [ "${DISTRO}" = "alpine" ] && [ "${DISTRO_VARIANT}" = "${{ vars.LATEST_ALPINE }}" ]; then
+                          image_latest+=",${GITHUB_REPOSITORY}:${DISTRO}"
+                      elif [ "${DISTRO}" = "debian" ] && [ "${DISTRO_VARIANT}" = "${{ vars.LATEST_DEBIAN }}" ]; then
+                          image_latest+=",${GITHUB_REPOSITORY}:${DISTRO}"
+                      fi
+          
+                      branch_tag="${GITHUB_REPOSITORY}:${DISTRO}-${DISTRO_VARIANT}${image_latest}"
+                  ;;
+                  "develop" )
+                      branch_tag="${GITHUB_REPOSITORY}:develop"
+                  ;;
+              esac
+          fi
+
+          # Handle tag-based releases
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+              git_tag="${GITHUB_REPOSITORY}:${DISTRO}-${DISTRO_VARIANT}-$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')"
+          fi
+
+          # Combine branch and tag tags
+          if [ -n "${branch_tag}" ] && [ -n "${git_tag}" ]; then
+              image_tags="${branch_tag},${git_tag}"
+          else
+              image_tags="${branch_tag}${git_tag}"
+          fi
+
+          # Generate Docker Hub and GHCR image names
+          dockerhub_images=$(echo "${image_tags}" | sed "s|${GITHUB_REPOSITORY}|docker.io/${REPO_NAME}|g")
+          ghcr_images=$(echo "${image_tags}" | sed "s|${GITHUB_REPOSITORY}|ghcr.io/${GITHUB_REPOSITORY}|g")
+          
+          echo "container_images=${dockerhub_images},${ghcr_images}" >> $GITHUB_OUTPUT
+
+      - name: Add labels to Dockerfile
+        run: |
+          image_name="${dockerhub_repo}"
+          if [ -f "${{ env.build_file }}" ]; then
+              # Add labels after FROM instruction
+              sed -i "/FROM .*/a LABEL focela.${image_name}.git_repository=\"https://github.com/${GITHUB_REPOSITORY}\"" ${{ env.build_file }}
+              sed -i "/FROM .*/a LABEL focela.${image_name}.git_commit=\"${GITHUB_SHA}\"" ${{ env.build_file }}
+              sed -i "/FROM .*/a LABEL focela.${image_name}.git_committed_by=\"${GITHUB_ACTOR}\"" ${{ env.build_file }}
+              sed -i "/FROM .*/a LABEL focela.${image_name}.image_build_date=\"$(date +'%Y-%m-%d %H:%M:%S')\"" ${{ env.build_file }}
+              sed -i "/FROM .*/a LABEL org.opencontainers.image.source=\"https://github.com/${GITHUB_REPOSITORY}\"" ${{ env.build_file }}
+
+              # Add changelog version if available
+              if [ -f "CHANGELOG.md" ]; then
+                  CHANGELOG_VERSION=$(head -n1 ./CHANGELOG.md | awk '{print $2}')
+                  sed -i "/FROM .*/a LABEL focela.${image_name}.git_changelog_version=\"${CHANGELOG_VERSION}\"" ${{ env.build_file }}
+                  mkdir -p install/assets/.changelogs
+                  cp CHANGELOG.md "install/assets/.changelogs/${GITHUB_REPOSITORY//\//_}.md"
+              fi
+
+              # Add ref-specific labels
+              if [[ $GITHUB_REF == refs/tags/* ]]; then
+                  sed -i "/FROM .*/a LABEL focela.${image_name}.git_tag=\"${GITHUB_REF#refs/tags/v}\"" ${{ env.build_file }}
+              elif [[ $GITHUB_REF == refs/heads/* ]]; then
+                  sed -i "/FROM .*/a LABEL focela.${image_name}.git_branch=\"${GITHUB_REF#refs/heads/}\"" ${{ env.build_file }}
+              fi
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ matrix.platforms }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+          buildkitd-flags: |
+            --debug
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./${{ env.build_file }}
+          platforms: ${{ matrix.platforms }}
+          push: true
+          tags: ${{ steps.prep.outputs.container_images }}
+          build-args: |
+            DISTRO=${{ env.DISTRO }}
+            DISTRO_VARIANT=${{ env.DISTRO_VARIANT }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Optional: Update Docker Hub description
+      # - name: Update Docker Hub description
+      #   if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      #   uses: peter-evans/dockerhub-description@v3
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
+      #     repository: ${{ env.dockerhub_repo }}
+      #     short-description: ${{ github.event.repository.description }}
+      #     readme-filepath: ./README.md
