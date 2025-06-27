@@ -1,5 +1,41 @@
-# IDE-SPECIFIC FILES
-# JetBrains IDEs (IntelliJ, WebStorm, etc.)
+#------------------------------------------------------------------------
+# Git Ignore Configuration
+#
+# Purpose: Defines files and directories that should be excluded from
+# version control. Organized by category for easy maintenance and
+# understanding of what gets ignored and why.
+#
+# Note: Patterns are checked in order. More specific patterns should
+# come after general ones. Use comments to explain non-obvious patterns.
+#------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------
+# OPERATING SYSTEM FILES
+#------------------------------------------------------------------------
+# macOS system and metadata files
+.DS_Store
+.apdisk
+._*
+.AppleDB
+.AppleDesktop
+.AppleDouble
+.com.apple.timemachine.donotpresent
+.DocumentRevisions-V100
+.fseventsd
+.LSOverride
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+Icon
+Network Trash Folder
+Temporary Items
+
+#------------------------------------------------------------------------
+# DEVELOPMENT ENVIRONMENT FILES
+#------------------------------------------------------------------------
+# JetBrains IDEs (IntelliJ IDEA, WebStorm, PyCharm, etc.)
 .idea/
 .idea_modules/
 .idea/$CACHE_FILE$
@@ -32,43 +68,27 @@ modules.xml
 *.iml
 *.ipr
 
-# EXTERNAL PLUGINS / THIRD-PARTY FILES
-# Atlassian, Crashlytics, Fabric, etc.
+#------------------------------------------------------------------------
+# THIRD-PARTY PLUGIN FILES
+#------------------------------------------------------------------------
+# External development tools and plugins
 atlassian-ide-plugin.xml
 com_crashlytics_export_strings.xml
 crashlytics-build.properties
 crashlytics.properties
 fabric.properties
 
-# OS-SPECIFIC FILES
-# macOS system files
-.DS_Store
-.apdisk
-._*
-.AppleDB
-.AppleDesktop
-.AppleDouble
-.com.apple.timemachine.donotpresent
-.DocumentRevisions-V100
-.fseventsd
-.LSOverride
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-Icon
-Network Trash Folder
-Temporary Items
-
-# PROJECT CONFIG / SECRETS
-# SSL and security-related
+#------------------------------------------------------------------------
+# SECURITY AND CONFIGURATION
+#------------------------------------------------------------------------
+# Sensitive configuration and security files
+.env
 .well-known/
 
-# Local environment configuration
-.env
-
-# LOGS / TEMP FILES
-# Log and temp files
+#------------------------------------------------------------------------
+# LOGS AND TEMPORARY FILES
+#------------------------------------------------------------------------
+# Application and system logs
 *.log
 *.tmp
 logs/
@@ -76,5 +96,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# DOCKER / KUBERNETES
+#------------------------------------------------------------------------
+# CONTAINER AND ORCHESTRATION
+#------------------------------------------------------------------------
+# Docker and Kubernetes configuration
 .kube/
