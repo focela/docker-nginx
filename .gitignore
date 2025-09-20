@@ -101,4 +101,4 @@ yarn-error.log*
 # CONTAINER AND ORCHESTRATION
 #-----------------------------------------------------------------------------
 # Docker and Kubernetes configuration
-.kube/1212121212121212
+.kube/121212121212121212
